@@ -1,11 +1,21 @@
 import DashboardHeader from "../../../components/DashboardHeader";
+import { useState, useEffect } from "react";
 
 const CollectorDashboard = () => {
+  const [userName, setUserName] = useState("Collector");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.name) {
+      setUserName(user.name);
+    }
+  }, []);
+
   return (
     <div className="bg-gray-100 min-h-screen">
       <DashboardHeader 
         title="Collector Dashboard" 
-        subtitle="View your daily tasks and collection performance" 
+        subtitle={`Welcome back, ${userName}`} 
       />
 
 

@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
 import ScrollToTop from "../components/ScrollToTop";
 import MainLayout from "../layouts/MainLayout";
 import HomePage from "../pages/HomePage";
@@ -24,6 +25,7 @@ import BinManagement from "../pages/dashboard/adminDashboard/BinManagement";
 import AdminReports from "../pages/dashboard/adminDashboard/AdminReports";
 import RoutesMap from "../pages/dashboard/adminDashboard/RoutesMap";
 import RealTimeMonitoring from "../pages/dashboard/adminDashboard/RealTimeMonitoring";
+import CustomerSupport from "../pages/dashboard/adminDashboard/CustomerSupport";
 import Works from "../pages/homePage/works";
 import Features from "../pages/homePage/feature";
 import Services from "../pages/homePage/service";
@@ -50,7 +52,14 @@ const AppRoutes = () => {
         <Route path="/forget" element={<Forget />} />
         <Route path="/otp-Screen" element={<OtpScreen />} />
 
-        <Route path="/Collector-Dashboard" element={<CollectorLayout />}>
+        <Route 
+          path="/Collector-Dashboard" 
+          element={
+            <ProtectedRoute allowedRole="collector">
+              <CollectorLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<CollectorDashboard />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="attendance" element={<Attendance />} />
@@ -61,7 +70,14 @@ const AppRoutes = () => {
           <Route path="profile" element={<Profile />} />
         </Route>
 
-        <Route path="/Admin-Dashboard" element={<AdminLayout />}>
+        <Route 
+          path="/Admin-Dashboard" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<AdminDashboard />} />
           <Route path="tasks-management" element={<TasksManagement />} />
           <Route path="collectors-management" element={<CollectorsManagement />} />
@@ -70,6 +86,7 @@ const AppRoutes = () => {
           <Route path="real-time-monitoring" element={<RealTimeMonitoring />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="routes-map" element={<RoutesMap />} />
+          <Route path="customer-support" element={<CustomerSupport />} />
         </Route>
       </Routes>
     </BrowserRouter>

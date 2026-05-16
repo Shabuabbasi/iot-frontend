@@ -5,12 +5,15 @@ import toast from "react-hot-toast";
 import logo from "../../assets/auth/Login_Logo.png";
 import img from "../../assets/auth/Right_Img.png";
 import "../../style/auth.css";
+import axios from "axios";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("collector");
+  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     if (!name) {
@@ -21,25 +24,32 @@ const SignUp = () => {
       toast.error("Email is required");
       return false;
     }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      toast.error("Please enter a valid email address");
-      return false;
-    }
     if (!password) {
       toast.error("Password is required");
-      return false;
-    }
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
       return false;
     }
     return true;
   };
 
-  const handleSignup = () => {
-    if (validate()) {
-      toast.success("Account created successfully!");
+  const handleSignup = async () => {
+    if (!validate()) return;
+
+    setLoading(true);
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/register", {
+        name,
+        email,
+        password,
+        role,
+      });
+
+      toast.success(response.data.message || "Account created successfully!");
       navigate("/login");
+    } catch (error) {
+      const message = error.response?.data?.message || "Signup failed. Please try again.";
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,24 +120,63 @@ const SignUp = () => {
         </div>
 
         {/* Password */}
-        <div className="flex flex-col mb-8">
-          <label className="text-sm font-semibold mb-2">Create Password</label>
+        <div className="flex flex-col mb-6">
+          <label className="text-sm font-semibold mb-2 text-gray-700">Create Password</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password"
-            className="border border-gray-300 rounded-full px-4 py-3 outline-none focus:ring-2 focus:ring-green-400"
+            placeholder="••••••••"
+            className="border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-400 bg-gray-50/50 transition-all"
           />
         </div>
 
-        {/* Signup Button */}
-        <button
-          onClick={handleSignup}
-          className="bg-green-600 hover:bg-green-700 transition text-white py-3.5 rounded-2xl text-lg font-bold shadow-lg shadow-green-100"
-        >
-          SIGN UP
-        </button>
+        {/* Role Selection (Improved with Toggle Buttons) */}
+        <div className="flex flex-col mb-8">
+          <label className="text-sm font-semibold mb-3 text-gray-700">Register As</label>
+          <div className="flex p-1 bg-gray-100 rounded-xl gap-1">
+            <button
+              type="button"
+              onClick={() => setRole("collector")}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                role === "collector"
+                  ? "bg-white text-green-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Collector
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("admin")}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                role === "admin"
+                  ? "bg-white text-green-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Admin
+            </button>
+          </div>
+        </div>
+
+        {/* Signup Button (Improved) */}
+        <div className="flex flex-col items-center">
+          <button
+            onClick={handleSignup}
+            disabled={loading}
+            className="w-full md:w-auto md:min-w-[200px] bg-green-600 hover:bg-green-700 transition-all text-white py-3 px-8 rounded-xl text-md font-bold shadow-lg shadow-green-100 disabled:opacity-50 active:scale-95"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                Processing...
+              </span>
+            ) : (
+              "SIGN UP"
+            )}
+          </button>
+        </div>
 
         {/* Login Link */}
         <div className="flex justify-center items-center gap-2 mt-8">

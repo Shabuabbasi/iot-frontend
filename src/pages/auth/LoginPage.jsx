@@ -5,40 +5,63 @@ import toast from "react-hot-toast";
 import logo from "../../assets/auth/Login_Logo.png";
 import img from "../../assets/auth/Right_Img.png";
 import "../../style/auth.css";
+import axios from "axios";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     if (!email) {
       toast.error("Email is required");
       return false;
     }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      toast.error("Please enter a valid email address");
-      return false;
-    }
     if (!password) {
       toast.error("Password is required");
-      return false;
-    }
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
       return false;
     }
     return true;
   };
 
-  const handleLogin = (role) => {
-    if (validate()) {
-      toast.success(`Logged in as ${role}`);
-      if (role === "Admin") {
+  const handleLogin = async (requestedRole) => {
+    if (!validate()) return;
+
+    setLoading(true);
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
+      });
+
+      const { token, user } = response.data;
+
+      // ROLE VALIDATION: Check if user's actual role matches what they requested
+      if (user.role.toLowerCase() !== requestedRole.toLowerCase()) {
+        toast.error(`Access Denied: You are registered as an ${user.role}, not a ${requestedRole}.`);
+        setLoading(false);
+        return;
+      }
+
+      // Save to localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("role", user.role);
+
+      toast.success(`Welcome back, ${user.name}!`);
+
+      // Navigate based on role
+      if (user.role === "admin") {
         navigate("/Admin-Dashboard");
       } else {
         navigate("/Collector-Dashboard");
       }
+    } catch (error) {
+      const message = error.response?.data?.message || "Login failed. Please check your credentials.";
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 

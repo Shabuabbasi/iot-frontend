@@ -1,7 +1,27 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Bell, Settings } from "lucide-react";
 
 const DashboardHeader = ({ title, subtitle }) => {
+  const [user, setUser] = useState({ name: "User", initials: "U" });
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        const name = parsedUser.name || "User";
+        const initials = name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase();
+        setUser({ name, initials });
+      } catch (e) {
+        console.error("Error parsing user from localStorage", e);
+      }
+    }
+  }, []);
+
   return (
     <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-8">
       {/* Left */}
@@ -27,10 +47,12 @@ const DashboardHeader = ({ title, subtitle }) => {
         <div className="flex items-center justify-between w-full sm:w-auto gap-4">
           {/* User Profile */}
           <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl shadow-sm border border-gray-100">
-            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600 font-bold text-xs">
-              JD
+            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600 font-bold text-xs uppercase">
+              {user.initials}
             </div>
-            <span className="text-sm font-semibold text-gray-700 hidden sm:block">John Doe</span>
+            <span className="text-sm font-semibold text-gray-700 hidden sm:block whitespace-nowrap">
+              {user.name}
+            </span>
           </div>
 
           {/* Icons */}

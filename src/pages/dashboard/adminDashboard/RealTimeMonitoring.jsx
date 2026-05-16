@@ -1,166 +1,164 @@
+import React, { useState, useEffect } from "react";
 import DashboardHeader from "../../../components/DashboardHeader";
+import axios from "axios";
+import socketService from "../../../services/socketService";
+import { UserCheck, MapPin, Camera, Trash2, Clock, Activity, Zap } from "lucide-react";
+import toast from "react-hot-toast";
 
 const RealTimeMonitoring = () => {
+  const [bins, setBins] = useState([]);
+  const [attendanceFeed, setAttendanceFeed] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchInitialData = async () => {
+    try {
+      const binsRes = await axios.get("http://localhost:5000/api/waste/all");
+      setBins(binsRes.data.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInitialData();
+    socketService.connect();
+
+    // Listen for Bin Updates
+    socketService.on("binUpdate", (updatedBin) => {
+      setBins(prev => prev.map(b => b.binId === updatedBin.binId ? updatedBin : b));
+      if (updatedBin.status === 'full') {
+        toast.error(`⚠️ Bin ${updatedBin.binId} is FULL!`, { position: 'top-right' });
+      }
+    });
+
+    // Listen for Attendance Updates
+    socketService.on("attendanceUpdate", (data) => {
+      setAttendanceFeed(prev => [data, ...prev].slice(0, 10)); // Keep last 10
+      toast.success(`👤 Collector just checked in!`, { icon: '🚚', position: 'top-right' });
+    });
+
+    return () => socketService.disconnect();
+  }, []);
+
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return "Unknown";
+    const diff = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  };
+
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="bg-gray-50 min-h-screen pb-12 font-sans">
       <DashboardHeader 
-        title="Real-Time Monitoring" 
-        subtitle="Monitor live bin status and verify collection through snapshots" 
+        title="Command Center" 
+        subtitle="Real-time operations monitoring and live activity feeds" 
       />
-        {/* STATUS TAGS */}
-      <div className="flex gap-3 mb-4 text-sm">
-        <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full">Empty</span>
-        <span className="bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full">Half-Full</span>
-        <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full">Full</span>
-        <span className="bg-gray-200 text-gray-600 px-3 py-1 rounded-full">Out of Order</span>
-      </div>
 
-      {/* GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
- {/* 🔹 LEFT: LIVE BIN STATUS */}
-        <div className="bg-white p-5 rounded-2xl shadow-md">
-
-          {/* Header */}
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Live Bin Status
-            </h2>
-
-            {/* Live Indicator */}
-            <span className="flex items-center gap-2 text-sm text-green-600">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              Live
-            </span>
-          </div>
-
-          {/* Bins */}
-          <div className="space-y-4">
-            {bins.map((bin, i) => (
-              <div
-                key={i}
-                className="border rounded-xl p-4 hover:shadow-md transition"
-              >
-                {/* Top */}
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <h3 className="font-semibold">{bin.name}</h3>
-                    <p className="text-xs text-gray-500">{bin.location}</p>
-                  </div>
-
-                  {/* Status Badge */}
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${getStatusBadge(
-                      bin.level
-                    )}`}
-                  >
-                    {getStatusText(bin.level)}
-                  </span>
-                </div>
-
-                {/* Progress */}
-                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`${getProgressColor(
-                      bin.level
-                    )} h-3 transition-all duration-500`}
-                    style={{ width: `${bin.level}%` }}
-                  ></div>
-                </div>
-
-                {/* Bottom */}
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>{bin.level}% filled</span>
-                  <span>{bin.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="px-6 md:px-8">
+        {/* TOP METRICS */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+           <MetricCard icon={<Activity className="text-green-500" />} label="Live Bins" value={bins.length} />
+           <MetricCard icon={<Trash2 className="text-red-500" />} label="Full Bins" value={bins.filter(b => b.status === 'full').length} />
+           <MetricCard icon={<UserCheck className="text-blue-500" />} label="Active Collectors" value={attendanceFeed.length} />
+           <MetricCard icon={<Zap className="text-yellow-500" />} label="System Status" value="Online" />
         </div>
 
-        {/* 🔹 RIGHT: SNAPSHOTS */}
-        <div className="bg-white p-5 rounded-2xl shadow-md">
-
-          <h2 className="text-lg font-semibold mb-4 text-gray-800">
-            Collector Snapshots (Verification)
-          </h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            {snapshots.map((snap, i) => (
-              <div
-                key={i}
-                className="border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
-              >
-                <img
-                  src={snap.image}
-                  alt="snapshot"
-                  className="w-full h-32 object-cover"
-                />
-
-                <div className="p-3">
-                  <p className="text-sm font-medium">{snap.bin}</p>
-                  <p className="text-xs text-gray-500">{snap.time}</p>
-
-                  {/* Buttons */}
-                  <div className="flex gap-2 mt-2">
-                    <button className="flex-1 bg-[#FFC437] text-black text-xs py-1 rounded hover:opacity-90">
-                      Verify
-                    </button>
-                    <button className="flex-1 bg-red-500 text-white text-xs py-1 rounded hover:bg-red-600">
-                      Reject
-                    </button>
+        {/* MAIN GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* 1. LIVE BIN MONITOR */}
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[700px]">
+             <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2"><Trash2 size={18} className="text-slate-400" /> Bin Network</h3>
+                <span className="flex items-center gap-1.5 text-[10px] font-black uppercase text-green-500 bg-green-50 px-2 py-1 rounded-full animate-pulse">
+                   Live Data
+                </span>
+             </div>
+             <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {bins.map(bin => (
+                  <div key={bin._id} className="p-4 rounded-2xl border border-slate-50 bg-slate-50/30 hover:border-green-100 transition-all group">
+                     <div className="flex justify-between items-start mb-3">
+                        <div>
+                           <p className="text-xs font-black text-slate-400 uppercase">{bin.binId}</p>
+                           <h4 className="font-bold text-slate-700 truncate max-w-[150px]">{bin.location}</h4>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${getStatusBadge(bin.wasteLevel)}`}>
+                           {bin.status}
+                        </span>
+                     </div>
+                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+                        <div className={`h-full transition-all duration-1000 ${getProgressColor(bin.wasteLevel)}`} style={{width: `${bin.wasteLevel}%`}}></div>
+                     </div>
+                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                        <span>{bin.wasteLevel}% Full</span>
+                        <span>{getRelativeTime(bin.updatedAt)}</span>
+                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                ))}
+             </div>
+          </div>
+
+          {/* 2. SNAPSHOT VERIFICATION */}
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[700px]">
+             <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2"><Camera size={18} className="text-slate-400" /> IoT Snapshots</h3>
+             </div>
+             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 gap-4">
+                {bins.filter(b => b.imageUrl).length === 0 ? (
+                  <div className="text-center py-20 text-slate-300 font-medium italic text-sm">No live snapshots...</div>
+                ) : (
+                  bins.filter(b => b.imageUrl).map(bin => (
+                    <div key={bin._id} className="rounded-2xl border border-slate-50 overflow-hidden shadow-sm group">
+                       <div className="relative h-40 overflow-hidden">
+                          <img src={`http://localhost:5000${bin.imageUrl}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bin" />
+                          <div className="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[9px] font-bold text-white uppercase tracking-widest">
+                             {bin.binId}
+                          </div>
+                       </div>
+                       <div className="p-4 bg-white flex justify-between items-center">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{getRelativeTime(bin.updatedAt)}</span>
+                          <div className="flex gap-2">
+                             <button className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"><UserCheck size={14} /></button>
+                             <button className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"><Trash2 size={14} /></button>
+                          </div>
+                       </div>
+                    </div>
+                  ))
+                )}
+             </div>
           </div>
 
         </div>
-
       </div>
     </div>
   );
 };
 
-/* ================= DATA ================= */
-
-const bins = [
-  { name: "BIN-1023", location: "Main Street", level: 92, time: "2 sec ago" },
-  { name: "BIN-8821", location: "Park Road", level: 55, time: "10 sec ago" },
-  { name: "BIN-4592", location: "City Center", level: 20, time: "30 sec ago" },
-];
-
-/* SNAPSHOTS */
-
-const snapshots = [
-  {
-    bin: "BIN-1023",
-    time: "2 mins ago",
-    image: "https://via.placeholder.com/300x200",
-  },
-  {
-    bin: "BIN-8821",
-    time: "10 mins ago",
-    image: "https://via.placeholder.com/300x200",
-  },
-];
-
-const getStatusText = (level) => {
-  if (level > 80) return "Full";
-  if (level > 40) return "Half";
-  return "Empty";
-};
+const MetricCard = ({ icon, label, value }) => (
+  <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:translate-y-[-2px] hover:shadow-md">
+    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center">
+       {React.cloneElement(icon, { size: 20 })}
+    </div>
+    <div>
+       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+       <h4 className="text-xl font-black text-slate-800">{value}</h4>
+    </div>
+  </div>
+);
 
 const getStatusBadge = (level) => {
-  if (level > 80) return "bg-red-100 text-red-600";
-  if (level > 40) return "bg-yellow-100 text-yellow-600";
-  return "bg-green-100 text-green-600";
+  if (level > 80) return "bg-red-50 text-red-600";
+  if (level > 40) return "bg-yellow-50 text-yellow-600";
+  return "bg-green-50 text-green-600";
 };
 
 const getProgressColor = (level) => {
-  if (level > 80) return "bg-red-500";
-  if (level > 40) return "bg-yellow-500";
-  return "bg-green-500";
+  if (level > 80) return "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]";
+  if (level > 40) return "bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.3)]";
+  return "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]";
 };
 
 export default RealTimeMonitoring;

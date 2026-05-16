@@ -26,6 +26,7 @@ const AdminSidebar = () => {
     { name: "Vehicle Management", icon: <Trash2 size={20} />, path: "vehicle-management" },
     { name: "Real-Time Monitoring", icon: <Headphones size={20} />, path: "real-time-monitoring" },
     { name: "Routes Map", icon: <Map size={20} />, path: "routes-map" },
+    { name: "Customer Support", icon: <Headphones size={20} />, path: "customer-support" },
     { name: "Reports", icon: <Trophy size={20} />, path: "reports" },
   ];
 
@@ -56,7 +57,7 @@ const AdminSidebar = () => {
       {/* 🔹 Sidebar */}
       <aside
         className={`fixed md:sticky top-0 left-0 z-50 
-        w-64 bg-white shadow-xl md:shadow-none
+        w-72 bg-white text-slate-600 border-r border-slate-100
         h-screen flex flex-col justify-between 
         transform transition-transform duration-300 ease-in-out
         ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
@@ -65,11 +66,13 @@ const AdminSidebar = () => {
         {/* Top Section */}
         <div className="p-6 overflow-y-auto flex-1">
           {/* Logo & Close Button */}
-          <div className="flex items-center justify-between mb-8">
-            <img src={logo} alt="logo" className="h-10" />
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-3">
+               <img src={logo} alt="logo" className="h-10" />
+            </div>
             <button
               onClick={() => setOpen(false)}
-              className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+              className="md:hidden p-2 hover:bg-slate-100 rounded-lg text-slate-400"
             >
               <X size={24} />
             </button>
@@ -83,14 +86,14 @@ const AdminSidebar = () => {
                 end
                 onClick={() => setOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
+                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                 ${isActive
-                    ? "bg-green-500 text-white shadow-lg shadow-green-200"
-                    : "text-gray-600 hover:bg-green-50 hover:text-green-600"
+                    ? "bg-green-500 text-white shadow-lg shadow-green-100"
+                    : "text-slate-600 hover:bg-green-50 hover:text-green-600"
                   }`
                 }
               >
-                <span className="text-lg">{item.icon}</span>
+                <span className={`transition-transform duration-200 group-hover:scale-110`}>{item.icon}</span>
                 <span className="font-semibold text-sm">{item.name}</span>
               </NavLink>
             ))}
@@ -99,23 +102,26 @@ const AdminSidebar = () => {
 
         {/* Bottom Section */}
         <div className="p-6">
-          <div className="bg-gradient-to-br from-green-400 to-green-600 p-4 rounded-2xl text-white shadow-lg">
-            <div className="bg-white/20 w-10 h-10 rounded-lg flex items-center justify-center mb-3">
-              <Headphones size={20} />
+          <div className="bg-linear-to-br from-green-400 to-green-600 p-6 rounded-3xl text-white shadow-lg shadow-green-100">
+            <div className="bg-white/20 w-10 h-10 rounded-xl flex items-center justify-center mb-4">
+              <Headphones size={20} className="text-white" />
             </div>
-            <p className="font-bold text-sm">Need Help?</p>
-            <p className="text-xs text-white/80 mb-3">Our support team is available 24/7</p>
-            <button className="w-full bg-white text-green-600 py-2 rounded-xl text-sm font-bold hover:bg-green-50 transition-colors">
-              Contact Support
+            <p className="font-bold text-sm mb-1">Need Help?</p>
+            <p className="text-xs text-white/80 mb-4">Our support team is available 24/7</p>
+            <button className="w-full bg-white text-green-600 py-2.5 rounded-xl text-xs font-bold hover:bg-green-50 transition-all active:scale-95">
+              CONTACT SUPPORT
             </button>
           </div>
 
           <button
-            onClick={() => navigate("/login")}
-            className="flex items-center gap-3 px-4 py-3 mt-4 text-gray-500 hover:text-red-500 transition-colors w-full font-semibold text-sm"
+            onClick={() => {
+              localStorage.clear();
+              navigate("/login");
+            }}
+            className="flex items-center gap-3 px-4 py-3 mt-4 text-slate-400 hover:text-red-500 transition-colors w-full font-semibold text-sm"
           >
             <LogOut size={18} />
-            Logout
+            LOGOUT
           </button>
         </div>
       </aside>
