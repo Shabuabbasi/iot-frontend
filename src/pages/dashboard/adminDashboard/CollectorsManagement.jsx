@@ -45,7 +45,7 @@ const CollectorsManagement = () => {
   const fetchCollectors = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/api/users/collectors");
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/collectors`);
       setCollectors(res.data.collectors || []);
       setLoading(false);
     } catch (error) {
@@ -62,7 +62,7 @@ const CollectorsManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/signup", {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/signup`, {
         ...formData,
         role: "collector"
       });
@@ -85,7 +85,7 @@ const CollectorsManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to remove this collector?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/users/delete/${id}`); // Assuming delete exists
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/users/delete/${id}`); // Assuming delete exists
       toast.success("Collector removed");
       fetchCollectors();
     } catch (error) {

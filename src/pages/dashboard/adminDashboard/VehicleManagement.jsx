@@ -22,8 +22,8 @@ const VehicleManagement = () => {
   const fetchData = async () => {
     try {
       const [vRes, cRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/vehicles/all"),
-        axios.get("http://localhost:5000/api/users/collectors")
+        axios.get(`${import.meta.env.VITE_API_URL}/api/vehicles/all`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/users/collectors`)
       ]);
       setVehicles(vRes.data.vehicles);
       setCollectors(cRes.data.data || cRes.data.collectors || []);
@@ -41,7 +41,7 @@ const VehicleManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/vehicles/add", formData);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/vehicles/add`, formData);
       toast.success("Vehicle registered and collector assigned! 🚛");
       setShowModal(false);
       setFormData({
@@ -62,7 +62,7 @@ const VehicleManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this vehicle?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/vehicles/delete/${id}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/vehicles/delete/${id}`);
       toast.success("Vehicle removed from fleet");
       fetchData();
     } catch (error) {

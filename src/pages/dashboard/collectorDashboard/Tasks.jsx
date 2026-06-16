@@ -1,72 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMap
-} from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
-import "leaflet-routing-machine";
+import { GoogleMap, useJsApiLoader, MarkerF, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
 import socketService from "../../../services/socketService";
 import toast from "react-hot-toast";
 import { 
-  Navigation, 
-  Camera, 
-  CheckCircle2, 
-  MapPin, 
-  Clock, 
-  ChevronRight,
-  Map as MapIcon,
-  List as ListIcon,
-  Activity,
-  AlertCircle
+  Navigation, Camera, CheckCircle2, MapPin, Clock, ChevronRight,
+  Map as MapIcon, List as ListIcon, Activity, AlertCircle
 } from "lucide-react";
 
-// Fix for default marker icon in Leaflet + React
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
-
 const mapContainerStyle = { width: "100%", height: "100%", borderRadius: "1.5rem" };
-const defaultCenter = [33.6844, 73.0479];
-
-// Routing Machine Component
-const Routing = ({ start, end }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!map || !start || !end) return;
-
-    const routingControl = L.Routing.control({
-      waypoints: [
-        L.latLng(start[0], start[1]),
-        L.latLng(end[0], end[1])
-      ],
-      lineOptions: {
-        styles: [{ color: "#22c55e", weight: 6 }]
-      },
-      addWaypoints: false,
-      draggableWaypoints: false,
-      fitSelectedRoutes: true,
-      show: false // Hide the instruction panel
-    }).addTo(map);
-
-    return () => map.removeControl(routingControl);
-  }, [map, start, end]);
-
-  return null;
-};
+const defaultCenter = { lat: 33.6844, lng: 73.0479 };
 
 const CollectorTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -76,8 +19,14 @@ const CollectorTasks = () => {
   const [viewMode, setViewMode] = useState("list"); // "list" or "map"
   const fileInputRef = useRef(null);
 
-  // User current location (hardcoded for now as in original code)
-  const collectorLocation = [33.6844, 73.0479];
+  const [directionsResponse, setDirectionsResponse] = useState(null);
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  });
+
+  const collectorLocation = { lat: 33.6844, lng: 73.0479 }; // Hardcoded for now
 
   const fetchTasks = async () => {
     try {
@@ -85,12 +34,12 @@ const CollectorTasks = () => {
       const collectorId = user?.id || user?._id;
       if (!collectorId) return;
 
-      const response = await axios.get(`http://localhost:5000/api/tasks/collector/${collectorId}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/tasks/collector/${collectorId}`);
       setTasks(response.data.tasks.map(t => ({
         ...t,
         id: t._id,
-        lat: t.lat || defaultCenter[0],
-        lng: t.lng || defaultCenter[1]
+        lat: t.lat || defaultCenter.lat,
+        lng: t.lng || defaultCenter.lng
       })));
     } catch (error) {
       console.error("Fetch error", error);
@@ -110,6 +59,11 @@ const CollectorTasks = () => {
     return () => socketService.disconnect();
   }, []);
 
+  // When a task is selected, clear existing directions so it recalculates
+  useEffect(() => {
+    setDirectionsResponse(null);
+  }, [selected]);
+
   const handleComplete = async (event) => {
     const file = event.target.files[0];
     if (!file || !selected) return;
@@ -119,7 +73,7 @@ const CollectorTasks = () => {
 
     try {
       setCompleting(true);
-      await axios.put(`http://localhost:5000/api/tasks/${selected.id}/complete`, formData);
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/tasks/${selected.id}/complete`, formData);
       toast.success("Bin cleared! Great job.");
       fetchTasks();
       setSelected(null);
@@ -136,6 +90,16 @@ const CollectorTasks = () => {
   };
 
   const activeTasksCount = tasks.filter(t => t.status !== "Completed").length;
+
+  const directionsCallback = useCallback((response) => {
+    if (response !== null) {
+      if (response.status === 'OK') {
+        setDirectionsResponse(response);
+      } else {
+        console.log('Directions request failed due to ' + response.status);
+      }
+    }
+  }, []);
 
   return (
     <div className="bg-gray-50 min-h-screen text-slate-800 flex flex-col font-sans">
@@ -231,24 +195,49 @@ const CollectorTasks = () => {
           </div>
         ) : (
           <div className="h-[70vh] w-full relative bg-white rounded-3xl p-2 shadow-sm border border-slate-100 overflow-hidden">
-            <MapContainer
-              center={selected ? [selected.lat, selected.lng] : defaultCenter}
-              zoom={14}
-              style={mapContainerStyle}
-            >
-               <TileLayer
-                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-               />
-               
-               {selected && (
-                 <Routing start={collectorLocation} end={[selected.lat, selected.lng]} />
-               )}
-               
-               {!selected && tasks.map(task => (
-                 <Marker key={task.id} position={[task.lat, task.lng]} eventHandlers={{ click: () => setSelected(task) }} />
-               ))}
-            </MapContainer>
+            {isLoaded ? (
+              <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                center={selected ? { lat: selected.lat, lng: selected.lng } : defaultCenter}
+                zoom={14}
+                options={{ disableDefaultUI: false }}
+              >
+                 {selected && !directionsResponse && (
+                   <DirectionsService
+                     options={{
+                       destination: { lat: selected.lat, lng: selected.lng },
+                       origin: collectorLocation,
+                       travelMode: 'DRIVING'
+                     }}
+                     callback={directionsCallback}
+                   />
+                 )}
+                 
+                 {directionsResponse && (
+                   <DirectionsRenderer
+                     options={{
+                       directions: directionsResponse,
+                       polylineOptions: { strokeColor: "#22c55e", strokeWeight: 6 }
+                     }}
+                   />
+                 )}
+                 
+                 {!selected && tasks.map(task => (
+                   <MarkerF 
+                     key={task.id} 
+                     position={{ lat: task.lat, lng: task.lng }} 
+                     onClick={() => setSelected(task)} 
+                   />
+                 ))}
+              </GoogleMap>
+            ) : (
+               <div className="flex items-center justify-center w-full h-full">
+                 <div className="animate-pulse flex flex-col items-center">
+                   <div className="h-8 w-8 bg-green-500 rounded-full mb-4"></div>
+                   <p className="text-gray-500 font-medium">Loading Map...</p>
+                 </div>
+               </div>
+            )}
             
             {/* Overlay UI for Map */}
             {selected && (

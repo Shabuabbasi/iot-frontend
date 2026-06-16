@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardHeader from "../../../components/DashboardHeader";
 import axios from "axios";
 import socketService from "../../../services/socketService";
-import { UserCheck, MapPin, Camera, Trash2, Clock, Activity, Zap } from "lucide-react";
+import { UserCheck, Camera, Trash2, Activity, Zap, Radio } from "lucide-react";
 import toast from "react-hot-toast";
 
 const RealTimeMonitoring = () => {
@@ -12,7 +12,7 @@ const RealTimeMonitoring = () => {
 
   const fetchInitialData = async () => {
     try {
-      const binsRes = await axios.get("http://localhost:5000/api/waste/all");
+      const binsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/all`);
       setBins(binsRes.data.data);
       setLoading(false);
     } catch (error) {
@@ -25,9 +25,13 @@ const RealTimeMonitoring = () => {
     fetchInitialData();
     socketService.connect();
 
-    // Listen for Bin Updates
+    // Listen for Bin Updates (upload + heartbeat every ~30s)
     socketService.on("binUpdate", (updatedBin) => {
-      setBins(prev => prev.map(b => b.binId === updatedBin.binId ? updatedBin : b));
+      setBins(prev => {
+        const exists = prev.some(b => b.binId === updatedBin.binId);
+        if (!exists) return [...prev, updatedBin];
+        return prev.map(b => b.binId === updatedBin.binId ? updatedBin : b);
+      });
       if (updatedBin.status === 'full') {
         toast.error(`⚠️ Bin ${updatedBin.binId} is FULL!`, { position: 'top-right' });
       }
@@ -45,9 +49,11 @@ const RealTimeMonitoring = () => {
   const getRelativeTime = (dateString) => {
     if (!dateString) return "Unknown";
     const diff = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (diff < 0) return "Just now";
     if (diff < 60) return `${diff}s ago`;
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
   };
 
   return (
@@ -92,6 +98,15 @@ const RealTimeMonitoring = () => {
                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
                         <div className={`h-full transition-all duration-1000 ${getProgressColor(bin.wasteLevel)}`} style={{width: `${bin.wasteLevel}%`}}></div>
                      </div>
+                     <div className="flex items-center justify-between gap-2 mb-2 px-2 py-1.5 rounded-lg bg-white border border-slate-100">
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                           <Radio size={12} className="text-green-500 animate-pulse" />
+                           Live distance
+                        </span>
+                        <span className="text-sm font-black text-slate-800 tabular-nums">
+                           {bin.distance != null ? `${bin.distance} cm` : '—'}
+                        </span>
+                     </div>
                      <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
                         <span>{bin.wasteLevel}% Full</span>
                         <span>{getRelativeTime(bin.updatedAt)}</span>
@@ -113,7 +128,7 @@ const RealTimeMonitoring = () => {
                   bins.filter(b => b.imageUrl).map(bin => (
                     <div key={bin._id} className="rounded-2xl border border-slate-50 overflow-hidden shadow-sm group">
                        <div className="relative h-40 overflow-hidden">
-                          <img src={`http://localhost:5000${bin.imageUrl}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bin" />
+                          <img src={`${import.meta.env.VITE_API_URL}${bin.imageUrl}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bin" />
                           <div className="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[9px] font-bold text-white uppercase tracking-widest">
                              {bin.binId}
                           </div>

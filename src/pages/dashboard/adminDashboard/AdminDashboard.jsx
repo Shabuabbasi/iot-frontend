@@ -47,7 +47,7 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const wasteResponse = await axios.get("http://localhost:5000/api/waste/all");
+      const wasteResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/all`);
       const allBins = wasteResponse.data.data;
       const fullBinsCount = allBins.filter(b => b.wasteLevel > 80).length;
       

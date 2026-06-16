@@ -43,8 +43,8 @@ const AdminReports = () => {
       try {
         setLoading(true);
         if (activeTab === "bins") {
-          const response = await axios.get("http://localhost:5000/api/waste/all");
-          const statsResponse = await axios.get("http://localhost:5000/api/waste/stats");
+          const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/all`);
+          const statsResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/stats`);
           const breakdown = statsResponse.data.stats.map(s => ({
             name: s._id.charAt(0).toUpperCase() + s._id.slice(1),
             value: s.count,
@@ -57,7 +57,7 @@ const AdminReports = () => {
             avgFillLevel: Math.round(response.data.data.reduce((acc, curr) => acc + curr.wasteLevel, 0) / response.data.data.length) || 0
           });
         } else {
-          const response = await axios.get("http://localhost:5000/api/attendance/all");
+          const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/attendance/all`);
           setAttendanceHistory(response.data.history);
         }
       } catch (error) {

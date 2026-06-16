@@ -23,9 +23,9 @@ const TasksManagement = () => {
     try {
       setLoading(true);
       const [tasksRes, binsRes, collectorsRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/tasks"),
-        axios.get("http://localhost:5000/api/waste/all"),
-        axios.get("http://localhost:5000/api/users/collectors")
+        axios.get(`${import.meta.env.VITE_API_URL}/api/tasks`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/waste/all`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/users/collectors`)
       ]);
 
       setTasks(tasksRes.data.tasks || []);
@@ -51,7 +51,7 @@ const TasksManagement = () => {
 
     setAssigning(true);
     try {
-      await axios.post("http://localhost:5000/api/tasks/assign", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/tasks/assign`, {
         binId: selectedBinId,
         collectorId: selectedCollectorId
       });
@@ -230,7 +230,7 @@ const TasksManagement = () => {
               </div>
               <div className="relative aspect-video bg-slate-100">
                  <img 
-                    src={previewImage.startsWith('http') ? previewImage : `http://localhost:5000${previewImage}`} 
+                    src={previewImage.startsWith('http') ? previewImage : `${import.meta.env.VITE_API_URL}${previewImage}`} 
                     className="w-full h-full object-contain" 
                     alt="Proof"
                     onError={(e) => {

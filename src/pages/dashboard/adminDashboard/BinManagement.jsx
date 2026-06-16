@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Filter, MoreVertical, MapPin, Trash2, X, AlertTriangle  } from "lucide-react";
+import { Search, Filter, MoreVertical, MapPin, Trash2, AlertTriangle } from "lucide-react";
 import DashboardHeader from "../../../components/DashboardHeader";
 import axios from "axios";
 import toast from "react-hot-toast";
+import socketService from "../../../services/socketService";
 
 const BinManagement = () => {
   const [bins, setBins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState({ open: false, binId: null, _id: null });
+  const [addModal, setAddModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newBin, setNewBin] = useState({ binId: "", location: "", lat: "", lng: "" });
 
   const fetchBins = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/waste/all");
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/all`);
       setBins(response.data.data);
       setLoading(false);
     } catch (error) {
@@ -22,12 +26,48 @@ const BinManagement = () => {
 
   useEffect(() => {
     fetchBins();
+    socketService.connect();
+    socketService.on("binUpdate", (updatedBin) => {
+      setBins(prev => {
+        const exists = prev.some(b => b.binId === updatedBin.binId);
+        if (!exists) return [updatedBin, ...prev];
+        return prev.map(b => b.binId === updatedBin.binId ? updatedBin : b);
+      });
+    });
+    return () => socketService.disconnect();
   }, []);
+
+  const handleAddBin = async (e) => {
+    e.preventDefault();
+    if (!newBin.binId.trim() || !newBin.location.trim()) {
+      toast.error("Bin ID and location are required");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = {
+        binId: newBin.binId.trim(),
+        location: newBin.location.trim(),
+      };
+      if (newBin.lat) payload.lat = parseFloat(newBin.lat);
+      if (newBin.lng) payload.lng = parseFloat(newBin.lng);
+
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/waste/register`, payload);
+      setBins(prev => [res.data.data, ...prev]);
+      toast.success(`Bin ${newBin.binId} registered`);
+      setAddModal(false);
+      setNewBin({ binId: "", location: "", lat: "", lng: "" });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to register bin");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleDelete = async () => {
     try {
       // Note: Assuming there's a delete endpoint or just simulating for now
-      // await axios.delete(`http://localhost:5000/api/waste/${deleteModal._id}`);
+      // await axios.delete(`${import.meta.env.VITE_API_URL}/api/waste/${deleteModal._id}`);
       toast.success(`Bin ${deleteModal.binId} removed successfully`);
       setBins(bins.filter(b => b._id !== deleteModal._id));
       setDeleteModal({ open: false, binId: null, _id: null });
@@ -42,6 +82,78 @@ const BinManagement = () => {
         title="Bin Management" 
         subtitle="Real-time status of connected smart bins across the metropolitan area" 
       />
+
+      {/* ADD BIN MODAL */}
+      {addModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Register New Bin</h3>
+            <form onSubmit={handleAddBin} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Bin ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. BIN_007"
+                  value={newBin.binId}
+                  onChange={(e) => setNewBin({ ...newBin, binId: e.target.value })}
+                  className="mt-1 w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-400"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Location</label>
+                <input
+                  type="text"
+                  placeholder="e.g. C-block"
+                  value={newBin.location}
+                  onChange={(e) => setNewBin({ ...newBin, location: e.target.value })}
+                  className="mt-1 w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-400"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">Latitude (optional)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={newBin.lat}
+                    onChange={(e) => setNewBin({ ...newBin, lat: e.target.value })}
+                    className="mt-1 w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">Longitude (optional)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={newBin.lng}
+                    onChange={(e) => setNewBin({ ...newBin, lng: e.target.value })}
+                    className="mt-1 w-full px-4 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">Must match the binId in your ESP32 code. Heartbeats will update this bin live.</p>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAddModal(false)}
+                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-2xl hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-3 bg-green-500 text-white font-bold rounded-2xl hover:bg-green-600 disabled:opacity-50"
+                >
+                  {submitting ? "Saving..." : "Add Bin"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* DELETE MODAL */}
       {deleteModal.open && (
@@ -74,7 +186,11 @@ const BinManagement = () => {
       )}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 px-4 md:px-0">
-        <button className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all">
+        <button
+          type="button"
+          onClick={() => setAddModal(true)}
+          className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all"
+        >
           + Add New Bin
         </button>
       </div>
@@ -113,6 +229,7 @@ const BinManagement = () => {
         <tr>
           <th className="p-4 text-left">Bin ID</th>
           <th className="p-4 text-left">Location</th>
+          <th className="p-4 text-left">Live Distance</th>
           <th className="p-4 text-left">Fill Level</th>
           <th className="p-4 text-left">Last Updated</th>
           <th className="p-4 text-left">Coordinates</th>
@@ -123,9 +240,9 @@ const BinManagement = () => {
       {/* BODY */}
       <tbody>
         {loading ? (
-          <tr><td colSpan="6" className="p-8 text-center text-gray-500">Loading live bins...</td></tr>
+          <tr><td colSpan="7" className="p-8 text-center text-gray-500">Loading live bins...</td></tr>
         ) : bins.length === 0 ? (
-          <tr><td colSpan="6" className="p-8 text-center text-gray-500">No bins connected yet.</td></tr>
+          <tr><td colSpan="7" className="p-8 text-center text-gray-500">No bins connected yet.</td></tr>
         ) : (
           bins.map((bin) => (
             <tr key={bin._id} className="border-b last:border-0 hover:bg-gray-50/50 transition-colors">
@@ -144,6 +261,11 @@ const BinManagement = () => {
                     <span className="text-xs text-gray-400">Smart Sensor Node</span>
                   </div>
                 </div>
+              </td>
+
+              {/* LIVE DISTANCE */}
+              <td className="p-4 font-mono text-gray-700">
+                {bin.distance != null ? `${bin.distance} cm` : "—"}
               </td>
 
               {/* FILL LEVEL */}

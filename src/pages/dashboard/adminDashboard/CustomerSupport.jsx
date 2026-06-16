@@ -21,7 +21,7 @@ const CustomerSupport = () => {
 
   const fetchTickets = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/support/all");
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/support/all`);
       setTickets(response.data.tickets);
       setLoading(false);
     } catch (error) {
@@ -36,7 +36,7 @@ const CustomerSupport = () => {
 
   const handleStatusChange = async (id, status) => {
     try {
-      await axios.patch(`http://localhost:5000/api/support/update/${id}`, { status });
+      await axios.patch(`${import.meta.env.VITE_API_URL}/api/support/update/${id}`, { status });
       toast.success(`Ticket marked as ${status}`);
       fetchTickets();
     } catch (error) {
@@ -47,7 +47,7 @@ const CustomerSupport = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this ticket?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/support/delete/${id}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/support/delete/${id}`);
       toast.success("Ticket deleted");
       fetchTickets();
     } catch (error) {

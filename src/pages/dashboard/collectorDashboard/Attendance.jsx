@@ -25,14 +25,14 @@ const Attendance = () => {
       if (!userId) return;
 
       // Fetch status for today
-      const statusRes = await axios.get(`http://localhost:5000/api/attendance/status/${userId}`);
+      const statusRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/attendance/status/${userId}`);
       setIsClockedIn(statusRes.data.checkedIn);
       if (statusRes.data.checkedIn) {
         setStatus(statusRes.data.attendance.status.toUpperCase());
       }
 
       // Fetch history and stats
-      const historyRes = await axios.get(`http://localhost:5000/api/attendance/history/${userId}`);
+      const historyRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/attendance/history/${userId}`);
       setHistory(historyRes.data.history);
       setStats({
         attendanceRate: historyRes.data.stats.rate,
@@ -73,7 +73,7 @@ const Attendance = () => {
           const user = JSON.parse(localStorage.getItem("user"));
           const userId = user?.id || user?._id;
 
-          await axios.post("http://localhost:5000/api/attendance/check-in", {
+          await axios.post(`${import.meta.env.VITE_API_URL}/api/attendance/check-in`, {
             userId,
             lat: position.coords.latitude,
             lng: position.coords.longitude
