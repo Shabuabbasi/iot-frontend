@@ -35,6 +35,7 @@ const AdminSidebar = () => {
     { name: "Routes Map", icon: <Map size={20} />, path: "routes-map" },
     { name: "Customer Support", icon: <Headphones size={20} />, path: "customer-support" },
     { name: "Reports", icon: <Trophy size={20} />, path: "reports" },
+    { name: "Profile", icon: <User size={20} />, path: "profile" },
   ];
 
   const handleSubmit = async (e) => {

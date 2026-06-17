@@ -26,6 +26,7 @@ import AdminReports from "../pages/dashboard/adminDashboard/AdminReports";
 import RoutesMap from "../pages/dashboard/adminDashboard/RoutesMap";
 import RealTimeMonitoring from "../pages/dashboard/adminDashboard/RealTimeMonitoring";
 import CustomerSupport from "../pages/dashboard/adminDashboard/CustomerSupport";
+import AdminProfile from "../pages/dashboard/adminDashboard/AdminProfile";
 import Works from "../pages/homePage/works";
 import Features from "../pages/homePage/feature";
 import Services from "../pages/homePage/service";
@@ -87,6 +88,7 @@ const AppRoutes = () => {
           <Route path="reports" element={<AdminReports />} />
           <Route path="routes-map" element={<RoutesMap />} />
           <Route path="customer-support" element={<CustomerSupport />} />
+          <Route path="profile" element={<AdminProfile />} />
         </Route>
       </Routes>
     </BrowserRouter>
