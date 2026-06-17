@@ -24,11 +24,11 @@ const CollectorSidebar = () => {
     { name: "My Tasks", icon: <CheckSquare size={20} />, path: "tasks" },
     { name: "Bin Collections", icon: <Trash2 size={20} />, path: "bin-collections" },
     { name: "Collectors Routes", icon: <Map size={20} />, path: "collectors-routes" },
-    { name: "Upload Proof", icon: <Upload size={20} />, path: "upload-proof" },
+    // { name: "Upload Proof", icon: <Upload size={20} />, path: "upload-proof" },
     { name: "Reports", icon: <Upload size={20} />, path: "reports" },
     // { name: "Achievements", icon: <Trophy size={20} />, path: "achievements" },
     { name: "Profile", icon: <User size={20} />, path: "profile" },
-    { name: "Logout", icon: <LogOut size={20} />, path: "logout" },
+    // { name: "Logout", icon: <LogOut size={20} />, path: "logout" },
   ];
 
   return (
