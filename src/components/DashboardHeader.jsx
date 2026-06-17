@@ -1,25 +1,42 @@
 import React, { useState, useEffect } from "react";
 import { Search, Bell, Settings } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+const getProfileImage = (path) => {
+  if (!path) return "";
+  if (path.startsWith("data:") || path.startsWith("http")) return path;
+  return `${API_URL}${path}`;
+};
+
 const DashboardHeader = ({ title, subtitle }) => {
-  const [user, setUser] = useState({ name: "User", initials: "U" });
+  const [user, setUser] = useState({ name: "User", initials: "U", profilePic: "" });
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        const name = parsedUser.name || "User";
-        const initials = name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase();
-        setUser({ name, initials });
-      } catch (e) {
-        console.error("Error parsing user from localStorage", e);
+    const loadUser = () => {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          const name = parsedUser.name || "User";
+          const initials = name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase();
+          setUser({ name, initials, profilePic: parsedUser.profilePic || "" });
+        } catch (e) {
+          console.error("Error parsing user from localStorage", e);
+        }
       }
-    }
+    };
+
+    loadUser();
+    window.addEventListener("user-updated", loadUser);
+
+    return () => {
+      window.removeEventListener("user-updated", loadUser);
+    };
   }, []);
 
   return (
@@ -47,9 +64,17 @@ const DashboardHeader = ({ title, subtitle }) => {
         <div className="flex items-center justify-between w-full sm:w-auto gap-4">
           {/* User Profile */}
           <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl shadow-sm border border-gray-100">
-            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600 font-bold text-xs uppercase">
-              {user.initials}
-            </div>
+            {user.profilePic ? (
+              <img
+                src={getProfileImage(user.profilePic)}
+                alt="profile"
+                className="w-8 h-8 rounded-lg object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600 font-bold text-xs uppercase">
+                {user.initials}
+              </div>
+            )}
             <span className="text-sm font-semibold text-gray-700 hidden sm:block whitespace-nowrap">
               {user.name}
             </span>
