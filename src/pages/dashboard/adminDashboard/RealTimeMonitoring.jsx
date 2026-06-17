@@ -128,7 +128,7 @@ const RealTimeMonitoring = () => {
                   bins.filter(b => b.imageUrl).map(bin => (
                     <div key={bin._id} className="rounded-2xl border border-slate-50 overflow-hidden shadow-sm group">
                        <div className="relative h-40 overflow-hidden">
-                          <img src={`${import.meta.env.VITE_API_URL}${bin.imageUrl}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bin" />
+                          <img src={bin.imageUrl?.startsWith('http') ? bin.imageUrl : `${import.meta.env.VITE_API_URL}${bin.imageUrl}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bin" />
                           <div className="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[9px] font-bold text-white uppercase tracking-widest">
                              {bin.binId}
                           </div>
