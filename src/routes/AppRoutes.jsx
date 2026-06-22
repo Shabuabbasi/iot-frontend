@@ -8,6 +8,7 @@ import LoginPage from "../pages/auth/LoginPage";
 import Signup from "../pages/auth/Signup";
 import Forget from "../pages/auth/forget";
 import OtpScreen from "../pages/auth/otpScreen";
+import ResetPassword from "../pages/auth/ResetPassword";
 import CollectorLayout from "../layouts/CollectorLayout";
 import CollectorDashboard from "../pages/dashboard/collectorDashboard/CollectorDashboard";
 import Tasks from "../pages/dashboard/collectorDashboard/Tasks";
@@ -52,6 +53,7 @@ const AppRoutes = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forget" element={<Forget />} />
         <Route path="/otp-Screen" element={<OtpScreen />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route 
           path="/Collector-Dashboard" 

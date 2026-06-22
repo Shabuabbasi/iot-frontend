@@ -1,13 +1,19 @@
 import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import toast from "react-hot-toast";
 import logo from "../../assets/auth/Login_Logo.png";
 import img from "../../assets/auth/Right_Img.png";
 import "../../style/auth.css";
 
 const OtpScreen = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [loading, setLoading] = useState(false);
+  
+  const email = location.state?.email || "";
 
   const handleBack = () => {
     navigate("/login");
@@ -25,15 +31,34 @@ const OtpScreen = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const enteredOtp = otp.join("");
 
     if (enteredOtp.length < 4) {
-      alert("Please enter complete OTP");
+      toast.error("Please enter complete OTP");
       return;
     }
 
-    alert("OTP Verified!");
+    if (!email) {
+      toast.error("Session expired. Please try again.");
+      navigate("/forget");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/verify-otp`, { 
+        email, 
+        otp: enteredOtp 
+      });
+      toast.success("OTP Verified!");
+      navigate("/reset-password", { state: { email, otp: enteredOtp } });
+    } catch (error) {
+      const message = error.response?.data?.message || "Invalid OTP. Please try again.";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,12 +113,12 @@ const OtpScreen = () => {
             ))}
           </div>
 
-          {/* Verify Button */}
           <button
             onClick={handleSubmit}
-            className="bg-green-500 hover:bg-green-600 transition text-white py-3 rounded-full text-lg font-semibold"
+            disabled={loading}
+            className={`transition text-white py-3 rounded-full text-lg font-semibold ${loading ? 'bg-gray-400' : 'bg-green-500 hover:bg-green-600'}`}
           >
-            VERIFY OTP
+            {loading ? "VERIFYING..." : "VERIFY OTP"}
           </button>
 
           {/* Resend */}
