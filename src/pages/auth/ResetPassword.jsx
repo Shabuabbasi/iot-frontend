@@ -42,7 +42,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reset-password`, { 
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reset-password`, {
         email,
         otp,
         newPassword
@@ -58,11 +58,12 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="h-screen w-full bg-white flex p-0 m-0">
-      <div className="flex w-full bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
-        {/* LEFT SIDE */}
+    <div className="min-h-screen w-full bg-white flex p-0 m-0">
+      <div className="flex flex-col md:flex-row w-full bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
+
+        {/* LEFT SIDE — hidden on mobile */}
         <div
-          className="w-1/2 flex items-center justify-center overflow-hidden"
+          className="hidden md:flex w-1/2 items-center justify-center overflow-hidden"
           style={{ backgroundColor: "#22C55E" }}
         >
           <img
@@ -73,10 +74,10 @@ const ResetPassword = () => {
         </div>
 
         {/* RIGHT SIDE */}
-        <div className="w-1/2 flex flex-col justify-center md:px-12">
+        <div className="w-full md:w-1/2 flex flex-col justify-center px-6 sm:px-10 md:px-12 py-10">
           {/* Back */}
           <div
-            className="text-green-600 cursor-pointer mt-4"
+            className="text-green-600 cursor-pointer mb-4"
             onClick={handleBack}
           >
             <ArrowLeft size={26} />
@@ -84,13 +85,13 @@ const ResetPassword = () => {
 
           {/* Logo */}
           <div className="flex justify-center">
-            <img src={logo} alt="logo" className="w-[220px] mb-[-30px]" />
+            <img src={logo} alt="logo" className="w-[160px] sm:w-[200px] mb-[-20px]" />
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl font-bold text-center">Reset Password</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-center mt-4">Reset Password</h1>
 
-          <p className="text-center text-gray-500 mb-6">
+          <p className="text-center text-gray-500 mb-6 text-sm sm:text-base">
             Enter your new password below
           </p>
 
@@ -103,10 +104,10 @@ const ResetPassword = () => {
                 placeholder="Enter new password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="border border-gray-300 rounded-full px-4 py-3 outline-none focus:ring-2 focus:ring-green-400"
+                className="border border-gray-300 rounded-full px-4 py-3 outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base"
               />
             </div>
-            
+
             <div className="flex flex-col mb-6">
               <label className="text-sm font-semibold mb-2">Confirm New Password</label>
               <input
@@ -114,7 +115,7 @@ const ResetPassword = () => {
                 placeholder="Confirm new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="border border-gray-300 rounded-full px-4 py-3 outline-none focus:ring-2 focus:ring-green-400"
+                className="border border-gray-300 rounded-full px-4 py-3 outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base"
               />
             </div>
 
@@ -122,7 +123,7 @@ const ResetPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`transition text-white py-3 rounded-full text-lg font-semibold w-full ${loading ? 'bg-gray-400' : 'bg-green-500 hover:bg-green-600'}`}
+              className={`transition text-white py-3 rounded-full text-base sm:text-lg font-semibold w-full ${loading ? 'bg-gray-400' : 'bg-green-500 hover:bg-green-600'}`}
             >
               {loading ? "RESETTING..." : "RESET PASSWORD"}
             </button>
